@@ -70,6 +70,8 @@ echo "Body text" | ~/.agent/bin/email-alert --to "you@example.com" --subject "Su
 - `--e2e-test`: sends a real email using SMTP with a timestamp+nonce payload (skips queue flush so it’s immediate)
 - `--dry-run`: prints/logs what would happen without sending
 
+`--test` and `--e2e-test` are mutually exclusive.
+
 ## Logging
 
 Logs go to stderr and a rotating file:
@@ -77,6 +79,22 @@ Logs go to stderr and a rotating file:
 - Control with: `--log-level`, `--log-file`, `EMAIL_ALERT_LOG_MAX_BYTES`, `EMAIL_ALERT_LOG_BACKUP_COUNT`
 
 At the default `INFO` log level, the CLI prints progress-style steps (flush, rate limit decisions, and SMTP connection attempts).
+
+## Exit codes
+
+- `0`: sent successfully, queued successfully, deduped, or rate-limited (depending on config)
+- `1`: send failed (and either not queued, or `EMAIL_ALERT_ON_FAIL=queue_fail`)
+- `2`: input/usage error
+
+`--e2e-test` always exits non-zero on failure.
+
+## Privacy / local state
+
+`${EMAIL_ALERT_STATE_DIR}` can contain queued messages and test outbox entries with full email bodies. Treat it as sensitive and keep it private.
+
+## OS support
+
+Designed for macOS/Linux. Windows support is untested (the lock implementation is Unix-oriented).
 
 ## Rate limiting & dedupe
 

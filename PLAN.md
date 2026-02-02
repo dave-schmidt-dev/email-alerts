@@ -203,7 +203,7 @@ Rationale:
   - Implements `--test` and `--e2e-test` behavior flags.
 - `email_alert/config.py`
   - Loads env vars and optional `.env` file; resolves defaults for `to`/`from`.
-  - Resolves `EMAIL_ALERT_STATE_DIR` default path (macOS).
+  - Resolves `EMAIL_ALERT_STATE_DIR` default path.
 - `email_alert/model.py`
   - Small dataclasses for `Message`, `SendResult`, etc.
   - Central place for normalization used by dedupe hashing.

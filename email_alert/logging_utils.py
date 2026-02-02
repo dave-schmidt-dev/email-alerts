@@ -8,6 +8,22 @@ from pathlib import Path
 from email_alert.model import Config
 
 
+class PrivateRotatingFileHandler(RotatingFileHandler):
+    def _ensure_private(self) -> None:
+        try:
+            Path(self.baseFilename).chmod(0o600)
+        except OSError:
+            pass
+
+    def emit(self, record: logging.LogRecord) -> None:  # pragma: no cover
+        self._ensure_private()
+        return super().emit(record)
+
+    def doRollover(self) -> None:  # pragma: no cover
+        super().doRollover()
+        self._ensure_private()
+
+
 def body_fingerprint(body: str) -> tuple[int, str]:
     body_bytes = body.encode("utf-8", errors="replace")
     digest = hashlib.sha256(body_bytes).hexdigest()
@@ -49,7 +65,7 @@ def configure_logging(
         max_bytes = int(config.log_max_bytes) if config.log_max_bytes else 0
         backup_count = int(config.log_backup_count) if config.log_backup_count else 0
 
-        file_handler = RotatingFileHandler(
+        file_handler = PrivateRotatingFileHandler(
             filename=str(log_file),
             maxBytes=max_bytes,
             backupCount=backup_count,

@@ -7,22 +7,42 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-import fcntl
+try:
+    import fcntl  # type: ignore[attr-defined]
+except Exception:  # pragma: no cover
+    fcntl = None  # type: ignore[assignment]
 
 
 def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(path, 0o700)
+    except OSError:
+        pass
+
+
+def ensure_private_file(path: Path) -> None:
+    try:
+        if path.exists():
+            os.chmod(path, 0o600)
+    except OSError:
+        pass
 
 
 def atomic_write_text(path: Path, text: str) -> None:
     ensure_dir(path.parent)
     fd, tmp_path = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(path.parent))
     try:
+        try:
+            os.fchmod(fd, 0o600)
+        except OSError:
+            pass
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(text)
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp_path, path)
+        ensure_private_file(path)
     finally:
         try:
             os.unlink(tmp_path)
@@ -39,10 +59,18 @@ def read_text(path: Path) -> str:
 
 def append_text(path: Path, text: str) -> None:
     ensure_dir(path.parent)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(text)
-        f.flush()
-        os.fsync(f.fileno())
+    fd = os.open(path, os.O_CREAT | os.O_APPEND | os.O_WRONLY, 0o600)
+    try:
+        try:
+            os.fchmod(fd, 0o600)
+        except OSError:
+            pass
+        with os.fdopen(fd, "a", encoding="utf-8") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+    finally:
+        ensure_private_file(path)
 
 
 def append_jsonl(path: Path, obj: object) -> None:
@@ -55,10 +83,12 @@ def state_lock(state_dir: Path) -> Iterator[None]:
     lock_path = state_dir / ".lock"
     fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
     try:
-        fcntl.flock(fd, fcntl.LOCK_EX)
+        if fcntl is not None:
+            fcntl.flock(fd, fcntl.LOCK_EX)
         yield
     finally:
         try:
-            fcntl.flock(fd, fcntl.LOCK_UN)
+            if fcntl is not None:
+                fcntl.flock(fd, fcntl.LOCK_UN)
         finally:
             os.close(fd)

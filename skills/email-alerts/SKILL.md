@@ -42,7 +42,7 @@ Optional:
 Automation-friendly (body via stdin):
 
 ```bash
-echo "Something happened" | ~/.agent/bin/email-alert --subject "Alert"
+echo "Something happened" | ~/.agent/bin/email-alert --to "you@example.com" --subject "Alert"
 ```
 
 Test mode (no SMTP; writes to outbox):

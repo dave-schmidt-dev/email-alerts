@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 from email_alert.config import load_config
-from email_alert.app import generate_e2e_message, process_message
+from email_alert.app import generate_e2e_message, paths_for_config, process_message
 from email_alert.logging_utils import body_fingerprint, configure_logging
 from email_alert.model import Message
 from email_alert.senders import send_smtp, send_test
@@ -106,6 +106,10 @@ def main(argv: list[str] | None = None) -> int:
     except SystemExit as e:
         return int(e.code) if isinstance(e.code, int) else 2
 
+    if args.test and args.e2e_test:
+        print("input error: --test and --e2e-test are mutually exclusive", file=sys.stderr)
+        return 2
+
     config = load_config(
         repo_root=repo_root,
         log_level_override=args.log_level,
@@ -115,13 +119,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     logger = configure_logging(config=config)
 
+    if config.test_mode and config.e2e_test:
+        logger.error("input error: test mode and e2e-test cannot both be enabled")
+        return 2
+
     try:
         p_to, p_from, p_subject, p_body = _parse_positional(list(args.positional))
         to = args.to or p_to
         from_addr = args.from_addr or p_from or config.default_from or config.gmail_user
         subject = args.subject or p_subject
 
-        stdin_body = _read_stdin_if_piped()
+        stdin_body = _read_stdin_if_piped() if (args.body is None and p_body is None) else None
         body = args.body or p_body or stdin_body
 
         if config.e2e_test:
@@ -173,6 +181,10 @@ def main(argv: list[str] | None = None) -> int:
             log=lambda msg: logger.info("%s", msg),
         )
 
+        if config.e2e_test and not result.ok:
+            logger.error("e2e-test failed detail=%s", result.detail)
+            return 1
+
         if result.ok:
             return 0
         if result.queued and config.on_fail == "queue_ok":
@@ -188,10 +200,10 @@ def main(argv: list[str] | None = None) -> int:
         logger.exception("unexpected error")
 
         queued = False
-        if config is not None and message is not None:
+        if config is not None and message is not None and not config.e2e_test:
             try:
                 with state_lock(config.state_dir):
-                    queue_file = config.state_dir / "queue.jsonl"
+                    queue_file = paths_for_config(config)["queue"]
                     mid = message_id(message)
                     enqueue(
                         queue_file,

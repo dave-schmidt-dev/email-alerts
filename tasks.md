@@ -45,7 +45,7 @@ This is the execution checklist derived from `PLAN.md`. Tasks are grouped into p
 - [ ] Create `email_alert/config.py`
   - Load from environment + optional `.env` (per plan)
   - Resolve default `to` and default `from`
-  - Resolve `EMAIL_ALERT_STATE_DIR` default to `~/Library/Application Support/email-alerts`
+  - Resolve `EMAIL_ALERT_STATE_DIR` default to `~/.agent/state/email-alerts`
   - Done when: config resolution covered by tests or small targeted assertions.
 
 ## Phase 3 — Logging (stderr + rotating file)
@@ -130,7 +130,7 @@ This is the execution checklist derived from `PLAN.md`. Tasks are grouped into p
 - [ ] Add test harness (stdlib `unittest`) and minimal config
   - Done when: `python -m unittest` runs locally and discovers tests.
 - [ ] Ensure tests use a temp state dir
-  - Done when: tests never write to the real `~/Library/Application Support/email-alerts`.
+  - Done when: tests never write to the real `~/.agent/state/email-alerts`.
 - [ ] Add a quick “smoke test” doc snippet to `README.md`
   - Includes `--test` example and `--e2e-test` example
   - Done when: copy/paste commands work.

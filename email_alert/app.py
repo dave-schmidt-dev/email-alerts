@@ -36,6 +36,10 @@ def _paths_for_config(config: Config) -> dict[str, Path]:
     return p
 
 
+def paths_for_config(config: Config) -> dict[str, Path]:
+    return _paths_for_config(config)
+
+
 def _is_fatal_send_error(detail: str | None) -> bool:
     if not detail:
         return False
@@ -94,6 +98,10 @@ def _attempt_send_or_queue(
         log(f"sent: ok{(' detail=' + detail) if detail else ''}")
         return SendResult(ok=True, detail=detail)
 
+    if config.e2e_test:
+        log(f"sent: failed (e2e-test; not queued) detail={detail}")
+        return SendResult(ok=False, queued=False, detail=detail)
+
     entry = QueueEntry.from_message(msg_id=mid, message=message, now=now)
     entry.attempts = 1
     entry.last_attempt = now
@@ -121,18 +129,17 @@ def flush_queue(
     log(f"flush: found {len(entries)} queued item(s)")
 
     remaining: list[QueueEntry] = []
-    sent_any = False
-    changed = False
 
     for idx, entry in enumerate(entries):
         msg = entry.to_message()
         mid = entry.id or message_id(msg)
+        tail = entries[idx + 1 :]
 
         if was_sent_recently(
             sent_file=sent_file, msg_id=mid, now=now, window_seconds=config.dedupe_seconds
         ):
             log("flush: dropped deduped queued item")
-            changed = True
+            save_queue(queue_file, remaining + tail)
             continue
 
         if not bypass_rate_limit:
@@ -141,8 +148,9 @@ def flush_queue(
             )
             if limited:
                 remaining.append(entry)
-                remaining.extend(entries[idx + 1 :])
+                remaining.extend(tail)
                 log(f"flush: stopped due to rate-limit (remaining={remaining_seconds:.1f}s)")
+                save_queue(queue_file, remaining)
                 break
 
         ok, detail = send_fn(config, msg)
@@ -151,9 +159,8 @@ def flush_queue(
             record_sent(
                 sent_file=sent_file, msg_id=mid, now=now, window_seconds=config.dedupe_seconds
             )
-            sent_any = True
             log("flush: sent one queued item")
-            changed = True
+            save_queue(queue_file, remaining + tail)
             continue
 
         entry.attempts = int(entry.attempts or 0) + 1
@@ -161,15 +168,13 @@ def flush_queue(
         entry.last_error = detail
         remaining.append(entry)
         log(f"flush: send failed; kept in queue detail={detail}")
-        changed = True
+        save_queue(queue_file, remaining + tail)
 
         if _is_fatal_send_error(detail):
-            remaining.extend(entries[idx + 1 :])
+            remaining.extend(tail)
             log("flush: aborting due to fatal error (auth/creds)")
+            save_queue(queue_file, remaining)
             break
-
-    if changed or sent_any or len(remaining) != len(entries):
-        save_queue(queue_file, remaining)
 
 
 def process_message(
