@@ -97,6 +97,12 @@ Run unit tests:
 python3 -m unittest
 ```
 
+Install git pre-commit hook (runs compile checks + tests, and ruff if installed):
+
+```bash
+bash scripts/install-git-hooks.sh
+```
+
 Optional lint (used by the pre-commit hook if installed):
 
 ```bash
