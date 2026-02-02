@@ -1,0 +1,20 @@
+# Secrets
+config/.env
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+dist/
+build/
+
+# Local runtime artifacts (in case state dir is set inside the repo)
+queue.jsonl
+outbox.jsonl
+sent.log
+rate_limit.log
+email-alert.log
+email-alert.log.*
+
