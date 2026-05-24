@@ -58,9 +58,7 @@ def _load_dotenv_file(path: Path) -> dict[str, str]:
         value = value.strip()
         if not key:
             continue
-        if len(value) >= 2 and (
-            (value[0] == value[-1] == '"') or (value[0] == value[-1] == "'")
-        ):
+        if len(value) >= 2 and ((value[0] == value[-1] == '"') or (value[0] == value[-1] == "'")):
             value = value[1:-1]
         data[key] = value
     return data
@@ -70,10 +68,7 @@ def load_env(repo_root: Path, env: dict[str, str] | None = None) -> dict[str, st
     env = dict(os.environ if env is None else env)
 
     env_file = env.get("EMAIL_ALERT_ENV_FILE")
-    if env_file:
-        dotenv_path = Path(env_file).expanduser()
-    else:
-        dotenv_path = repo_root / "config" / ".env"
+    dotenv_path = Path(env_file).expanduser() if env_file else repo_root / "config" / ".env"
 
     dotenv_values = _load_dotenv_file(dotenv_path)
     for key, value in dotenv_values.items():
@@ -103,11 +98,7 @@ def load_config(
     gmail_user = merged_env.get("GMAIL_USER") or None
     gmail_app_password = merged_env.get("GMAIL_APP_PASSWORD") or None
 
-    default_to = (
-        merged_env.get("EMAIL_ALERT_TO")
-        or merged_env.get("EMAIL_TO")
-        or ""
-    )
+    default_to = merged_env.get("EMAIL_ALERT_TO") or merged_env.get("EMAIL_TO") or ""
     default_from = merged_env.get("EMAIL_ALERT_FROM") or None
 
     state_dir = resolve_state_dir(merged_env)
@@ -118,12 +109,8 @@ def load_config(
         else "queue_ok"
     )
 
-    rate_limit_seconds = _parse_int(
-        merged_env.get("EMAIL_ALERT_RATE_LIMIT_SECONDS"), default=60
-    )
-    dedupe_seconds = _parse_int(
-        merged_env.get("EMAIL_ALERT_DEDUPE_SECONDS"), default=60
-    )
+    rate_limit_seconds = _parse_int(merged_env.get("EMAIL_ALERT_RATE_LIMIT_SECONDS"), default=60)
+    dedupe_seconds = _parse_int(merged_env.get("EMAIL_ALERT_DEDUPE_SECONDS"), default=60)
 
     log_level = (log_level_override or merged_env.get("EMAIL_ALERT_LOG_LEVEL") or "INFO").upper()
     log_file = Path(
@@ -131,12 +118,8 @@ def load_config(
         or merged_env.get("EMAIL_ALERT_LOG_FILE")
         or (state_dir / "email-alert.log")
     ).expanduser()
-    log_max_bytes = _parse_int(
-        merged_env.get("EMAIL_ALERT_LOG_MAX_BYTES"), default=1_000_000
-    )
-    log_backup_count = _parse_int(
-        merged_env.get("EMAIL_ALERT_LOG_BACKUP_COUNT"), default=3
-    )
+    log_max_bytes = _parse_int(merged_env.get("EMAIL_ALERT_LOG_MAX_BYTES"), default=1_000_000)
+    log_backup_count = _parse_int(merged_env.get("EMAIL_ALERT_LOG_BACKUP_COUNT"), default=3)
 
     test_mode = (
         test_mode_override

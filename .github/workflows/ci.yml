@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9" # the launchd/system floor; keeps 3.10-only syntax out
+      - name: Install dev tools
+        run: pip install ruff vulture pytest
+      # The four steps below mirror the pre-commit hooks (CI parity).
+      - name: Ruff lint
+        run: ruff check .
+      - name: Ruff format check
+        run: ruff format --check .
+      - name: Vulture (dead code)
+        run: vulture email_alert tests vulture_whitelist.py
+      - name: Pytest
+        run: python -m pytest -q

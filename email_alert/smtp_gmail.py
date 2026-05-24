@@ -11,7 +11,6 @@ from pathlib import Path
 from email_alert.model import Config, Message
 from email_alert.state import atomic_write_text, read_text
 
-
 _SMTP_STATE_FILENAME = "smtp_state.json"
 _AVOID_TIMEOUT_SECONDS = 3600
 
@@ -140,7 +139,8 @@ def send_via_gmail_smtp(config: Config, message: Message) -> tuple[bool, str | N
                     port,
                     config.smtp_timeout_seconds,
                 )
-                with smtplib.SMTP(config.smtp_host, port, timeout=config.smtp_timeout_seconds) as smtp:
+                smtp_timeout = config.smtp_timeout_seconds
+                with smtplib.SMTP(config.smtp_host, port, timeout=smtp_timeout) as smtp:
                     smtp.ehlo()
                     smtp.starttls(context=context)
                     smtp.ehlo()

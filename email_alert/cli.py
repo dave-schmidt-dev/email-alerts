@@ -5,13 +5,13 @@ import sys
 import time
 from pathlib import Path
 
-from email_alert.config import load_config
 from email_alert.app import generate_e2e_message, paths_for_config, process_message
+from email_alert.config import load_config
+from email_alert.dedupe import message_id
 from email_alert.logging_utils import body_fingerprint, configure_logging
 from email_alert.model import Message
-from email_alert.senders import send_smtp, send_test
-from email_alert.dedupe import message_id
 from email_alert.queue import QueueEntry, enqueue
+from email_alert.senders import send_smtp, send_test
 from email_alert.state import state_lock
 
 
@@ -43,7 +43,9 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _parse_positional(positional: list[str]) -> tuple[str | None, str | None, str | None, str | None]:
+def _parse_positional(
+    positional: list[str],
+) -> tuple[str | None, str | None, str | None, str | None]:
     if not positional:
         return (None, None, None, None)
 

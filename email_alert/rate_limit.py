@@ -31,4 +31,3 @@ def is_rate_limited(
 
 def record_sent_time(*, rate_limit_file: Path, now: float) -> None:
     atomic_write_text(rate_limit_file, f"{now:.6f}\n")
-

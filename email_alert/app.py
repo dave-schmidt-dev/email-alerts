@@ -3,16 +3,19 @@ from __future__ import annotations
 import time
 import uuid
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional, Tuple
 
 from email_alert.dedupe import message_id, record_sent, was_sent_recently
 from email_alert.model import Config, Message, SendResult
 from email_alert.queue import QueueEntry, enqueue, load_queue, save_queue
 from email_alert.rate_limit import is_rate_limited, record_sent_time
-from email_alert.state import state_lock
+from email_alert.state import state_lock  # noqa: E402
 
-
-SendFn = Callable[[Config, Message], tuple[bool, str | None]]
+# NOTE: This is a module-level *assignment*, not an annotation, so it is
+# evaluated at import time regardless of `from __future__ import annotations`.
+# Use typing.Tuple/Optional so it works on Python 3.9 (the launchd/system
+# interpreter), not just 3.10+ where `str | None` is a runtime expression.
+SendFn = Callable[[Config, Message], Tuple[bool, Optional[str]]]
 
 
 def _paths(state_dir: Path) -> dict[str, Path]:
@@ -44,11 +47,7 @@ def _is_fatal_send_error(detail: str | None) -> bool:
     if not detail:
         return False
     d = detail.lower()
-    return (
-        "smtp auth failed" in d
-        or "missing gmail_user" in d
-        or "missing gmail_app_password" in d
-    )
+    return "smtp auth failed" in d or "missing gmail_user" in d or "missing gmail_app_password" in d
 
 
 def generate_e2e_message(config: Config, *, to: str, from_addr: str) -> Message:
@@ -92,9 +91,7 @@ def _attempt_send_or_queue(
     ok, detail = send_fn(config, message)
     if ok:
         record_sent_time(rate_limit_file=rate_file, now=now)
-        record_sent(
-            sent_file=sent_file, msg_id=mid, now=now, window_seconds=config.dedupe_seconds
-        )
+        record_sent(sent_file=sent_file, msg_id=mid, now=now, window_seconds=config.dedupe_seconds)
         log(f"sent: ok{(' detail=' + detail) if detail else ''}")
         return SendResult(ok=True, detail=detail)
 

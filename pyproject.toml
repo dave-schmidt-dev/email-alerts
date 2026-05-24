@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "email-alerts"
+version = "1.0.0"
+description = "A simple, stdlib-only CLI email-alerting tool for local scripts and automations."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "David Schmidt", email = "david@cipherblade.com" },
+    { name = "Zero Delta LLC" },
+]
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+email-alert = "email_alert.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["email_alert"]
+
+# ---------------------------------------------------------------------------
+# Ruff
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py39"          # CRITICAL: flags/forbids 3.10-only syntax
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+# B904 (raise-without-from-inside-except) is noisy in a stdlib-only tool
+# that intentionally re-raises with custom messages.
+ignore = ["B904"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests use unittest-style assertions mixed with plain assert; allow both.
+"tests/*.py" = ["B"]
+# app.py uses typing.Callable/Tuple/Optional for the module-level SendFn
+# assignment because str | None is a runtime expression that fails on Python
+# 3.9.  UP035/UP006 want the modern forms, which would re-introduce the bug.
+"email_alert/app.py" = ["UP006", "UP035"]
+# vulture_whitelist.py intentionally has bare attribute expressions and
+# non-top imports — that is the vulture whitelist pattern.
+"vulture_whitelist.py" = ["B018", "E402"]
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Keep the output clean; -q is the default for CI but devs may want -v.
+
+# ---------------------------------------------------------------------------
+# Vulture (dead-code detection)
+# ---------------------------------------------------------------------------
+[tool.vulture]
+min_confidence = 80
+paths = ["email_alert", "tests", "vulture_whitelist.py"]

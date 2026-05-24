@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from email_alert.model import Message
 from email_alert.state import append_jsonl, atomic_write_text, read_text
@@ -45,10 +45,7 @@ def was_sent_recently(*, sent_file: Path, msg_id: str, now: float, window_second
     if window_seconds <= 0:
         return False
     cutoff = now - window_seconds
-    for ts, mid in _iter_sent_entries(sent_file):
-        if ts >= cutoff and mid == msg_id:
-            return True
-    return False
+    return any(ts >= cutoff and mid == msg_id for ts, mid in _iter_sent_entries(sent_file))
 
 
 def record_sent(*, sent_file: Path, msg_id: str, now: float, window_seconds: int) -> None:
@@ -71,4 +68,3 @@ def prune_sent_file(*, sent_file: Path, now: float, window_seconds: int) -> None
         "\n".join(json.dumps(x, separators=(",", ":"), ensure_ascii=False) for x in keep)
         + ("\n" if keep else ""),
     )
-

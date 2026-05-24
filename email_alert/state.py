@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import tempfile
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
 
 try:
     import fcntl  # type: ignore[attr-defined]
@@ -15,10 +16,8 @@ except Exception:  # pragma: no cover
 
 def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
-    try:
+    with contextlib.suppress(OSError):
         os.chmod(path, 0o700)
-    except OSError:
-        pass
 
 
 def ensure_private_file(path: Path) -> None:
@@ -33,10 +32,8 @@ def atomic_write_text(path: Path, text: str) -> None:
     ensure_dir(path.parent)
     fd, tmp_path = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(path.parent))
     try:
-        try:
+        with contextlib.suppress(OSError):
             os.fchmod(fd, 0o600)
-        except OSError:
-            pass
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(text)
             f.flush()
@@ -44,10 +41,8 @@ def atomic_write_text(path: Path, text: str) -> None:
         os.replace(tmp_path, path)
         ensure_private_file(path)
     finally:
-        try:
+        with contextlib.suppress(FileNotFoundError):
             os.unlink(tmp_path)
-        except FileNotFoundError:
-            pass
 
 
 def read_text(path: Path) -> str:
@@ -61,10 +56,8 @@ def append_text(path: Path, text: str) -> None:
     ensure_dir(path.parent)
     fd = os.open(path, os.O_CREAT | os.O_APPEND | os.O_WRONLY, 0o600)
     try:
-        try:
+        with contextlib.suppress(OSError):
             os.fchmod(fd, 0o600)
-        except OSError:
-            pass
         with os.fdopen(fd, "a", encoding="utf-8") as f:
             f.write(text)
             f.flush()

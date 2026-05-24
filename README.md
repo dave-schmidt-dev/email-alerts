@@ -109,21 +109,28 @@ Designed for macOS/Linux. Windows support is untested (the lock implementation i
 
 ## Development
 
-Run unit tests:
+Packaging: `pyproject.toml` (hatchling), `requires-python = ">=3.9"`. The project is
+stdlib-only — no runtime dependencies. Pinned dev interpreter: `.python-version` = 3.9
+(the launchd/system floor), so 3.10-only syntax is caught locally.
+
+Tooling (run via `uvx`, no project venv needed):
 
 ```bash
-python3 -m unittest
+uvx pytest -q            # tests (migrated to pytest)
+uvx ruff check .         # lint
+uvx ruff format .        # format
+uvx vulture email_alert tests vulture_whitelist.py   # dead-code detection
 ```
 
-Install git pre-commit hook (runs compile checks + tests, and ruff if installed):
+Install the pre-commit framework hooks (lint + format + vulture on commit, full test
+suite on push). Mirrors `.github/workflows/ci.yml` (CI parity):
 
 ```bash
 bash scripts/install-git-hooks.sh
 ```
 
-Optional lint (used by the pre-commit hook if installed):
+### Optional: install as a console script
 
-```bash
-python3 -m pip install ruff
-ruff check .
-```
+The repo runs with **zero install** via `bin/email-alert` (see Install above). If you
+prefer a packaged console script instead, `pipx install .` (or `uv tool install .`)
+exposes an `email-alert` entry point (`email_alert.cli:main`).

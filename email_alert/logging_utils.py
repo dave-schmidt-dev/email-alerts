@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import logging
 from logging.handlers import RotatingFileHandler
@@ -10,10 +11,8 @@ from email_alert.model import Config
 
 class PrivateRotatingFileHandler(RotatingFileHandler):
     def _ensure_private(self) -> None:
-        try:
+        with contextlib.suppress(OSError):
             Path(self.baseFilename).chmod(0o600)
-        except OSError:
-            pass
 
     def emit(self, record: logging.LogRecord) -> None:  # pragma: no cover
         self._ensure_private()

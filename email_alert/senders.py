@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from email_alert.model import Config, Message
-from email_alert.state import append_jsonl
 from email_alert.smtp_gmail import send_via_gmail_smtp
+from email_alert.state import append_jsonl
 
 
 def send_test(config: Config, message: Message) -> tuple[bool, str | None]:

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable
 
 from email_alert.model import Message
 from email_alert.state import append_jsonl, atomic_write_text, read_text
@@ -22,7 +22,7 @@ class QueueEntry:
     last_error: str | None = None
 
     @classmethod
-    def from_message(cls, *, msg_id: str, message: Message, now: float) -> "QueueEntry":
+    def from_message(cls, *, msg_id: str, message: Message, now: float) -> QueueEntry:
         return cls(
             id=msg_id,
             to=message.to,
@@ -62,8 +62,12 @@ def load_queue(queue_file: Path) -> list[QueueEntry]:
                     body=str(obj.get("body") or ""),
                     enqueued_at=float(obj.get("enqueued_at") or 0.0),
                     attempts=int(obj.get("attempts") or 0),
-                    last_attempt=(float(obj["last_attempt"]) if obj.get("last_attempt") is not None else None),
-                    last_error=(str(obj["last_error"]) if obj.get("last_error") is not None else None),
+                    last_attempt=(
+                        float(obj["last_attempt"]) if obj.get("last_attempt") is not None else None
+                    ),
+                    last_error=(
+                        str(obj["last_error"]) if obj.get("last_error") is not None else None
+                    ),
                 )
             )
         except Exception:
@@ -72,12 +76,9 @@ def load_queue(queue_file: Path) -> list[QueueEntry]:
 
 
 def save_queue(queue_file: Path, entries: Iterable[QueueEntry]) -> None:
-    lines = [
-        json.dumps(asdict(e), separators=(",", ":"), ensure_ascii=False) for e in entries
-    ]
+    lines = [json.dumps(asdict(e), separators=(",", ":"), ensure_ascii=False) for e in entries]
     atomic_write_text(queue_file, ("\n".join(lines) + ("\n" if lines else "")))
 
 
 def enqueue(queue_file: Path, entry: QueueEntry) -> None:
     append_jsonl(queue_file, asdict(entry))
-
