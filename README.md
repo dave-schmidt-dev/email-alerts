@@ -134,3 +134,21 @@ bash scripts/install-git-hooks.sh
 The repo runs with **zero install** via `bin/email-alert` (see Install above). If you
 prefer a packaged console script instead, `pipx install .` (or `uv tool install .`)
 exposes an `email-alert` entry point (`email_alert.cli:main`).
+
+## Versioning
+
+`pyproject.toml` `[project].version` is the authoritative version (currently `1.0.0`).
+There is no separate `VERSION` file, and adopting this changelog/versioning documentation
+is documentation-only and does not bump the version.
+
+This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html):
+
+- **Major**: incompatible changes.
+- **Minor**: backward-compatible features or deprecations.
+- **Patch**: backward-compatible fixes.
+
+Compatibility covers the documented `email-alert` CLI arguments, environment
+configuration, and exit-code/queue behavior consumed by local automations.
+
+The existing `1.0.0` version describes the current packaged state only; it does not
+attest that live SMTP delivery is accepted by any provider today.
