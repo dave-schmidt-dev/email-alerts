@@ -123,7 +123,7 @@ uvx vulture email_alert tests vulture_whitelist.py   # dead-code detection
 ```
 
 Install the pre-commit framework hooks (lint + format + vulture on commit, full test
-suite on push). Mirrors `.github/workflows/ci.yml` (CI parity):
+suite on push). These local hooks are the only gate; the project has no remote CI:
 
 ```bash
 bash scripts/install-git-hooks.sh
